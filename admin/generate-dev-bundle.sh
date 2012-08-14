@@ -145,6 +145,7 @@ npm install request@2.9.202
 npm install http-proxy@0.8.0
 npm install simplesmtp@0.1.19
 npm install mailcomposer@0.1.15
+npm install stream-buffers@0.2.3
 
 # unused, but kept in bundle for compatibility for a while.
 npm install connect-gzip@0.1.5

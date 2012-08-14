@@ -1,13 +1,19 @@
 Email = {};
 
 (function () {
+  var Future = __meteor_bootstrap__.require('fibers/future');
+  // js2-mode AST blows up when parsing 'future.return()', so alias.
+  Future.prototype.ret = Future.prototype.return;
 
   var MailComposer = __meteor_bootstrap__.require('mailcomposer').MailComposer;
 
   if (process.env.MAIL_URL)
     throw new Error("SMTP not yet implemented");
 
-  var next_devmode_mail_id = 0;
+  Email._next_devmode_mail_id = 0;
+
+  // Overridden by tests.
+  Email._output_stream = process.stdout;
 
   /**
    * Send an email.
@@ -41,18 +47,21 @@ Email = {};
       text: options.text
     });
 
-    var devmode_mail_id = next_devmode_mail_id++;
+    var devmode_mail_id = Email._next_devmode_mail_id++;
 
-    // XXX are we guaranteed that this happens before the message?
-    process.stdout.write("====== BEGIN MAIL #" + devmode_mail_id +
-                         " ======\n");
+    // This approach does not prevent other writers to stdout from interleaving.
+    Email._output_stream.write("====== BEGIN MAIL #" + devmode_mail_id +
+                               " ======\n");
     mc.streamMessage();
     // XXX support SMTP
-    mc.pipe(process.stdout, {end: false});
+    mc.pipe(Email._output_stream, {end: false});
+    var future = new Future;
     mc.on('end', function () {
-      process.stdout.write("====== END MAIL #" + devmode_mail_id +
-                           " ======\n");
+      Email._output_stream.write("====== END MAIL #" + devmode_mail_id +
+                                 " ======\n");
+      future.ret();
     });
+    future.wait();
   };
 
 })();
