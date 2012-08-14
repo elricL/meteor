@@ -137,9 +137,9 @@
       user = Meteor.accounts.onCreateUserHook(options, extra, user);
       var userId = Meteor.users.insert(user);
 
-      // If `options.validation` is set, register a token to validate
+      // If `options.validate` is set, register a token to validate
       // the user's primary email, and send it to that address.
-      if (email && options.validation)
+      if (email && options.validate)
         Meteor.accounts.sendValidationEmail(userId, email, options.baseUrl);
 
       var loginToken = Meteor.accounts._loginTokens.insert({userId: userId});

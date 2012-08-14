@@ -108,10 +108,78 @@
       Session.set(IN_SIGNUP_FLOW_KEY, false);
       Session.set(IN_FORGOT_PASSWORD_FLOW_KEY, true);
     },
-    'keypress #login-username,#login-password,#login-password-again': function (event) {
+    'keypress #login-username,#login-email,#login-password,#login-password-again': function (event) {
       if (event.keyCode === 13)
         loginOrSignup();
     }
+  };
+
+  var showUsernameField = function () {
+    if (Session.get(IN_SIGNUP_FLOW_KEY)) {
+      return Meteor.accounts._options.requireUsername;
+    } else {
+      return !Template.loginButtonsServicesRow.showEmailField();
+    }
+  };
+
+  var showEmailField = function () {
+    if (Session.get(IN_SIGNUP_FLOW_KEY)) {
+      return Meteor.accounts._options.requireEmail ||
+        Meteor.accounts._options.optionalEmail;
+    } else {
+      return Meteor.accounts._options.loginWithEmail ||
+        (Meteor.accounts._options.requireEmail
+         && !Meteor.accounts._options.requireUsername);
+    }
+  };
+
+  Template.loginButtonsServicesRow.fields = function () {
+    var loginFields = [
+      {fieldName: 'username-or-email', fieldLabel: 'Username or Email',
+       visible: function () {
+         return Meteor.accounts._options.requireUsername
+           && Meteor.accounts._options.requireEmail;
+       }},
+      {fieldName: 'username', fieldLabel: 'Username',
+       visible: function () {
+         return Meteor.accounts._options.requireUsername
+           && !Meteor.accounts._options.requireEmail;
+       }},
+      {fieldName: 'email', fieldLabel: 'Email',
+       visible: function () {
+         return !Meteor.accounts._options.requireUsername
+           && Meteor.accounts._options.requireEmail;
+       }},
+      {fieldName: 'password', fieldLabel: 'Password', inputType: 'password',
+       visible: function () {
+         return true;
+       }}
+    ];
+
+    var signupFields = [
+      {fieldName: 'username', fieldLabel: 'Username',
+       visible: function () {
+         return Meteor.accounts._options.requireUsername;
+       }},
+      {fieldName: 'email', fieldLabel: 'Email',
+       visible: function () {
+         return Meteor.accounts._options.requireEmail; // xcxc sometimes optional?
+       }},
+      {fieldName: 'password', fieldLabel: 'Password', inputType: 'password',
+       visible: function () {
+         return true;
+       }},
+      {fieldName: 'password-again', fieldLabel: 'Password (again)',
+       inputType: 'password',
+       visible: function () {
+         return !Meteor.accounts._options.requireEmail;
+       }}
+    ];
+
+    var fields = Session.get(IN_SIGNUP_FLOW_KEY) ? signupFields : loginFields;
+    return _.filter(fields, function(info) {
+      return info.visible();
+    });
   };
 
   Template.loginButtonsServicesRow.services = function () {
@@ -295,10 +363,21 @@
 
   var login = function () {
     resetMessages();
-    var username = document.getElementById('login-username').value;
+
+    var loginSelector;
+    // xcxc is there a better way?
+    if (document.getElementById('login-email'))
+      loginSelector = {email: document.getElementById('login-email').value};
+    else if (document.getElementById('login-username'))
+      loginSelector = {username: document.getElementById('login-username').value};
+    else if (document.getElementById('login-username-or-email'))
+      loginSelector = document.getElementById('login-username-or-email').value;
+    else
+      throw new Error("Unexpected -- no element to use as a login user selector");
+
     var password = document.getElementById('login-password').value;
 
-    Meteor.loginWithPassword(username, password, function (error, result) {
+    Meteor.loginWithPassword(loginSelector, password, function (error, result) {
       if (error) {
         Session.set(ERROR_MESSAGE_KEY, error.reason);
       }
@@ -307,21 +386,43 @@
 
   var signup = function () {
     resetMessages();
-    var username = document.getElementById('login-username').value;
-    var password = document.getElementById('login-password').value;
-    var passwordAgain = document.getElementById('login-password-again').value;
 
-    // XXX these will become configurable, and will be validated on
-    // the server as well.
-    if (!validateUsername(username) || !validatePassword(password))
-      return;
+    var options = {}; // to be passed to Meteor.createUser
 
-    if (password !== passwordAgain) {
-      Session.set(ERROR_MESSAGE_KEY, "Passwords don't match");
-      return;
+    // xcxc same question - is there a better way?
+    if (document.getElementById('login-username')) {
+      var username = document.getElementById('login-username').value;
+      if (!validateUsername(username))
+        return;
+      else
+        options.username = username;
     }
 
-    Meteor.createUser({username: username, password: password}, function (error) {
+    if (document.getElementById('login-email')) {
+      var email = document.getElementById('login-email').value;
+      if (!validateEmail(email))
+        return;
+      else
+        options.email = email;
+    }
+
+    var password = document.getElementById('login-password').value;
+    if (!validatePassword(password))
+      return;
+    else
+      options.password = password;
+
+    if (document.getElementById('login-password-again')) {
+      if (password !== passwordAgain) {
+        Session.set(ERROR_MESSAGE_KEY, "Passwords don't match");
+        return;
+      }
+    }
+
+    if (Meteor.accounts._options.validateEmails)
+      options.validate = true;
+
+    Meteor.createUser(options, function (error) {
       if (error) {
         Session.set(ERROR_MESSAGE_KEY, error.reason);
       }
@@ -356,11 +457,22 @@
 
 
   // XXX improve these? should this be in accounts-passwords instead?
+  //
+  // XXX these will become configurable, and will be validated on
+  // the server as well.
   var validateUsername = function (username) {
     if (username.length >= 3) {
       return true;
     } else {
       Session.set(ERROR_MESSAGE_KEY, "Username must be at least 3 characters long");
+      return false;
+    }
+  };
+  var validateEmail = function (email) {
+    if (email.indexOf('@') !== -1) {
+      return true;
+    } else {
+      Session.set(ERROR_MESSAGE_KEY, "Invalid email");
       return false;
     }
   };

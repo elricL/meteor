@@ -41,11 +41,10 @@
       {{> forgotPasswordForm}}
       {{else}}
       <div class="login-form login-password-form">
-        <label id="login-username-label" for="login-username">Username</label>
-        <input id="login-username"/>
-
-        <label id="login-password-label" for="login-password">Password</label>
-        <input id="login-password" type="password"/>
+        <!-- xcxc we lose fields when switching to create account -- use spark?? -->
+        {{#each fields}}
+          {{> loginButtonsFormField}}
+        {{/each}}
 
         {{> loginButtonsServicesRowDynamicPart}}
       </div>
@@ -59,14 +58,16 @@
   {{/each}}
 </template>
 
+<template name="loginButtonsFormField">
+  <label id="login-{{fieldName}}-label" for="login-{{fieldName}}">
+    {{fieldLabel}}
+  </label>
+  <input id="login-{{fieldName}}" type="{{inputType}}" />
+</template>
+
 <!-- needed because of a liveui issue. https://app.asana.com/0/974383817758/1275404875524 -->
+<!-- xcxc rename?? -->
 <template name="loginButtonsServicesRowDynamicPart">
-
-  {{#if inSignupFlow}}
-  <label id="login-password-again-label" for="login-password-again">Password (again)</label>
-  <input id="login-password-again" type="password"/>
-  {{/if}}
-
   {{> loginButtonsMessages}}
 
   <div class="login-button login-button-form-submit" id="login-buttons-password">
@@ -112,6 +113,7 @@
 
 <template name="forgotPasswordForm">
   <div class="login-form">
+    <!-- xcxc also replace with fields -->
     <label id="forgot-password-email-label" for="forgot-password-email">Email</label>
     <input id="forgot-password-email"/>
 

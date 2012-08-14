@@ -9,7 +9,7 @@
       throw new Error("Must set options.password");
     var verifier = Meteor._srp.generateVerifier(options.password);
 
-    if (options.validation)
+    if (options.validate)
       // needed because we generate a link back to the app
       options.baseUrl = appBaseUrl();
 

@@ -6,8 +6,21 @@ if (!Meteor.accounts._options) {
   Meteor.accounts._options = {};
 }
 
+// xcxc describe options
+// - unsafePasswordChanges
+// - requireEmail
+// - requireUsername
+// - ADD: optionalEmail
+// - ADD: loginWithEmail
+// - ADD: sendValidationEmails
 Meteor.accounts.config = function(options) {
   Meteor.accounts._options = options;
+};
+
+Meteor.accounts.askPasswordAgain = function () {
+  // xcxc this could theoretically be better if once you set an email
+  // it hides the "password again"...?
+  return !Meteor.accounts._options.requireEmail;
 };
 
 
