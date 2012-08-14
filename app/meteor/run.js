@@ -188,6 +188,8 @@ var start_server = function (bundle_path, port, mongo_url,
     if (!data) return;
 
     // string must match server.js
+    // XXX what if the LISTENING is in the middle of data?
+    //     we observed this and it broke the server
     if (data.match(/^LISTENING\s*$/)) {
       on_listen_callback && on_listen_callback();
     } else {
